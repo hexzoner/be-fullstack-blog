@@ -5,9 +5,28 @@ const { Client } = pg;
 const app = express();
 const port = 3000;
 
+app.use(express.json());
 app.get("/posts", (req, res) => res.json({ message: "GET all posts" }));
 
-app.post("/posts", (req, res) => res.json({ message: "POST a new post" }));
+app.post("/posts", async (req, res) => {
+  console.log(req.body);
+  const parsedBody = req.body;
+
+  const client = new Client({
+    connectionString: process.env.PG_URI,
+  });
+  await client.connect();
+  const results = await client.query("INSERT INTO posts (author, title, cover, content, date) VALUES ($1, $2, $3, $4, $5) RETURNING *;", [
+    parsedBody.author,
+    parsedBody.title,
+    parsedBody.cover,
+    parsedBody.content,
+    parsedBody.date,
+  ]);
+  await client.end();
+
+  res.json(results.rows[0]);
+});
 
 app.get("/posts/:id", (req, res) => res.json({ message: "GET a post by id" }));
 
