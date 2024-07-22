@@ -6,10 +6,19 @@ const app = express();
 const port = 3000;
 
 app.use(express.json());
-app.get("/posts", (req, res) => res.json({ message: "GET all posts" }));
+app.get("/posts", async (req, res) => {
+  const client = new Client({
+    connectionString: process.env.PG_URI,
+  });
+  await client.connect();
+  const results = await client.query("SELECT * FROM posts;");
+  await client.end();
+
+  res.json(results.rows);
+});
 
 app.post("/posts", async (req, res) => {
-  console.log(req.body);
+  //   console.log(req.body);
   const parsedBody = req.body;
 
   const client = new Client({
