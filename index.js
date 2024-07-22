@@ -18,7 +18,7 @@ app.get("/posts", async (req, res) => {
       connectionString: process.env.PG_URI,
     });
     await client.connect();
-    const results = await client.query("SELECT * FROM posts LIMIT $1 OFFSET $2;", [limit, offset]);
+    const results = await client.query("SELECT * FROM posts ORDER BY date DESC LIMIT $1 OFFSET $2;", [limit, offset]);
     await client.end();
 
     // console.log(results.rowCount);
