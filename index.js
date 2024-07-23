@@ -51,7 +51,29 @@ app.post("/posts", async (req, res) => {
   }
 });
 
-app.get("/posts/:id", (req, res) => res.json({ message: "GET a post by id" }));
+app.get("/posts/:id", async (req, res) => {
+  
+  try {
+  const id=req.params.id;
+
+  const client = new Client({
+    connectionString: process.env.PG_URI,
+  });
+  await client.connect();
+  const results = await client.query("SELECT * FROM posts WHERE id=$1;", [
+    id
+  ]);
+  console.log(results.rowCount) 
+
+  await client.end();
+  if (results.rowCount=0) 
+     res.status(404).json({ error: "User not found" })
+  else
+  res.json(results.rows[0]);
+} catch (error) {
+  res.status(500).json(error.message);
+}
+});
 
 app.put("/posts/:id", (req, res) => res.json({ message: "PUT a post by id" }));
 
