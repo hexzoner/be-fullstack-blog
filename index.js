@@ -20,7 +20,6 @@ app.get("/posts", async (req, res) => {
     await client.connect();
     const results = await client.query("SELECT * FROM posts ORDER BY date DESC LIMIT $1 OFFSET $2;", [limit, offset]);
     await client.end();
-
     // console.log(results.rowCount);
     res.json(results.rows);
   } catch (error) {
@@ -36,13 +35,16 @@ app.post("/posts", async (req, res) => {
       connectionString: process.env.PG_URI,
     });
     await client.connect();
-    const results = await client.query("INSERT INTO posts (author, title, cover, content, date) VALUES ($1, $2, $3, $4, $5) RETURNING *;", [
-      parsedBody.author,
-      parsedBody.title,
-      parsedBody.cover,
-      parsedBody.content,
-      parsedBody.date,
-    ]);
+    const results = await client.query(
+      "INSERT INTO posts (author, title, cover, content, date) VALUES ($1, $2, $3, $4, $5) RETURNING *;",
+      [
+        parsedBody.author,
+        parsedBody.title,
+        parsedBody.cover,
+        parsedBody.content,
+        parsedBody.date,
+      ]
+    );
     await client.end();
 
     res.json(results.rows[0]);
@@ -51,10 +53,68 @@ app.post("/posts", async (req, res) => {
   }
 });
 
-app.get("/posts/:id", (req, res) => res.json({ message: "GET a post by id" }));
+app.get("/posts/:id", async (req, res) => {
+  
+  try {
+  const id=req.params.id;
 
-app.put("/posts/:id", (req, res) => res.json({ message: "PUT a post by id" }));
+  const client = new Client({
+    connectionString: process.env.PG_URI,
+  });
+  await client.connect();
+  const results = await client.query("SELECT * FROM posts WHERE id=$1;", [
+    id
+  ]); 
 
-app.delete("/posts/:id", (req, res) => res.json({ message: "DELETE a post by id" }));
+  await client.end();
+  if (results.rowCount==0) 
+     res.status(404).json({ error: "User not found" })
+  else
+  res.json(results.rows[0]);
+} catch (error) {
+  res.status(500).json(error.message);
+}
+});
+
+app.put("/posts/:id", async (req, res) => {
+  try {
+    const id = req.params.id;
+    const { author, title, cover, content, date } = req.body;
+
+    const client = new Client({
+      connectionString: process.env.PG_URI,
+    });
+    await client.connect();
+    const results = await client.query(
+      "UPDATE posts SET author = $1, title = $2, cover = $3, content = $4, date = $5 WHERE id = $6 RETURNING *;",
+      [author, title, cover, content, date, id]
+    );
+    await client.end();
+
+    res.json(results.rows[0]);
+  } catch (error) {
+    res.status(500).json("Wasn't possible to edit post");
+  }
+});
+
+app.delete("/posts/:id", async (req, res) => {
+  try {
+    const id = req.params.id;
+
+    const client = new Client({
+      connectionString: process.env.PG_URI,
+    });
+    await client.connect();
+    const results = await client.query(
+      "DELETE FROM posts WHERE id = $1 RETURNING *;",
+      [id]
+    );
+    await client.end();
+
+    res.json(results.rows[0]);
+  } catch (error) {
+    res.status(500).sned("Wasn't possible to delete");
+  }
+});
 
 app.listen(port, () => console.log(`Server is running on port ${port}`));
