@@ -68,11 +68,10 @@ app.get("/posts/:id", async (req, res) => {
   await client.connect();
   const results = await client.query("SELECT * FROM posts WHERE id=$1;", [
     id
-  ]);
-  console.log(results.rowCount) 
+  ]); 
 
   await client.end();
-  if (results.rowCount=0) 
+  if (results.rowCount==0) 
      res.status(404).json({ error: "User not found" })
   else
   res.json(results.rows[0]);
